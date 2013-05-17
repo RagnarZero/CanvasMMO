@@ -13,6 +13,9 @@
 
 			var blockSize = 50.0;
 
+			var intervalTime = 10.0;
+			var intervalDiffOffset = intervalTime;
+
 			$(document).ready(function() {
 				var c = document.getElementById("mainCanvas");
 				
@@ -36,7 +39,7 @@
 		      	function animate() {
 			        
 
-
+		      		handleMovement();
 			        // clear
 			        ctx.clearRect(0, 0, windowWidth, windowHeight);
 
@@ -56,9 +59,7 @@
 						}
 			        }
 
-			        if(player != null){
-			        	handleMovement();
-			        }
+			        
 		       
 		        // request new frame
 		        requestAnimFrame(function() {
@@ -132,21 +133,66 @@
 			   
 			}
 
-			function handleMovement(){
 
-			    if(pressedKeys[37]) {
-			        player.xPos = player.xPos - 4;
+			function updatePlayerMoveVector(){
+
+    		    if(pressedKeys[37]) {
+		       		player.movevector.x = - 8;
 			    }
-			    if(pressedKeys[39]) {
-			        player.xPos = player.xPos + 4;
+			    else if(pressedKeys[39]) {
+			    	
+			    	debugTrackPlayerMove = true;
+			    	debugPlayerMoveStart = new Date().getTime();
+
+			        player.movevector.x =  8;
 			    }
+			    else{
+			    	debugTrackPlayerMove = false;
+			    	player.movevector.x = 0;
+			    }
+
 			    if(pressedKeys[38]) {
-			        player.yPos = player.yPos - 4;
+			        player.movevector.y = - 8;
 			    }
-			    if(pressedKeys[40]) {
-			        player.yPos = player.yPos + 4;
+			    else if(pressedKeys[40]) {
+			        player.movevector.y =  8;
 			    }
+			    else{
+			    	player.movevector.y = 0;
+			    }
+			}
 
+			function handleMovement(){
+				currentIntervalTS = new Date().getTime();
+
+				var intervalDif = (currentIntervalTS -lastIntervalTS);
+
+				//if(intervalDif>=intervalDiffOffset){
+					
+					//console.log("Interval Time: " + intervalDif);
+					//console.log("Interval Offset: " + intervalDiffOffset);
+
+					intervalDif = 0;
+
+					for(var i= 0; i < gameObjectList.length; i++){
+
+						gameObjectList[i].xPos = gameObjectList[i].xPos + gameObjectList[i].movevector.x;
+						gameObjectList[i].yPos = gameObjectList[i].yPos + gameObjectList[i].movevector.y;
+						
+						if(gameObjectList[i].id == player.id){
+							player.xPos = gameObjectList[i].xPos;							
+							player.yPos = gameObjectList[i].yPos;
+							player.name = gameObjectList[i].name;
+							player.chatMessage = gameObjectList[i].chatMessage;
+						}
+
+					}
+					
+
+					//intervalDiffOffset = 50.0 - (intervalDif - 50.0);
+					
+					lastIntervalTS = new Date().getTime();
+				//}
 
 		  		//socket.emit('move', player);		
 			}
@@ -163,6 +209,16 @@
 
 		  var chatWindowVisible = false;
 
+		  var debugPlayerMoveStart = 0;
+		  var debugPlayerMoveEnd = 0;
+		  var debugTrackPlayerMove = false;
+		  var debugPlayerPlayerMove = 0;
+
+
+		  var currentIntervalTS = 0;
+		  var lastIntervalTS = 0;
+
+
 		  socket.on('login', function (serverPlayerList) {
 
 		  	
@@ -172,12 +228,21 @@
 		    console.log(serverPlayerList);
 			
 		   
- 
+ 			//window.setInterval("handleMovement()", 50);
 
 			$(document.body).keydown(function (e) {
 				if(!pressedKeys[e.keyCode]){
 		    		pressedKeys[e.keyCode] = true;
-		    		socket.emit('movestart', player);
+
+		    		/*
+
+						37,38,39,40
+   					*/
+   					if(e.keyCode == 37 || e.keyCode == 38 || e.keyCode == 39 || e.keyCode == 40){
+		    			updatePlayerMoveVector();
+		    			socket.emit('movestart', player);
+		    		}
+		    		
 		   		}
 		    					  	
 			});
@@ -185,7 +250,18 @@
 			$(document.body).keyup(function (e) {
 				if(pressedKeys[e.keyCode]){
 					pressedKeys[e.keyCode] = false;
-					socket.emit('moveend', player);
+
+					debugPlayerMoveEnd = new Date().getTime();
+					var debugTimeDiff = (debugPlayerMoveEnd - debugPlayerMoveStart);
+					console.log('Client: Player moved for '+ debugTimeDiff + 'ms');
+					debugPlayerPlayerMove = 0;
+
+					if(e.keyCode == 37 || e.keyCode == 38 || e.keyCode == 39 || e.keyCode == 40){
+						updatePlayerMoveVector();
+						socket.emit('moveend', player);
+					}
+
+					
 				}
 				
 			});
@@ -221,6 +297,14 @@
 		    }
 		  });
 
+		  socket.on('playervectorchange', function(playerObj){
+		  	for(var i=0; i < gameObjectList.length; i++){
+		      if(gameObjectList[i].id == playerObj.id){
+		        gameObjectList[i] = playerObj;
+		      }
+		    }
+		  });
+
 		  socket.on('updateplayerlist', function(serverPlayerList){
 		  	updatePlayerList(serverPlayerList);
 		  });
@@ -237,6 +321,7 @@
 			}
 
 		  });
+
 
 		  socket.on('changecolor', function (data) {
 		  	//$('#chatName').css('color',data.color);

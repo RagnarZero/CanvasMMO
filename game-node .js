@@ -1,7 +1,9 @@
-var app = require('express')()
-  , server = require('http').createServer(app)
-  , io = require('socket.io').listen(server);
+var express = require('express');
+var app = express();
+var server = require('http').createServer(app);
+var io = require('socket.io').listen(server);
 
+app.use(express.static(__dirname + '/public'));
 server.listen(4242);
 
 
@@ -26,7 +28,11 @@ io.sockets.on('connection', function (socket) {
 
   var randomColor = {red: randomRed, blue: randomBlue, green: randomGreen};
 
-  playerList.push( { id: socket.id ,name: 'Player'+playerList.length, color: randomColor, xPos: 50.0, yPos: 50.0, movevector: {x: 0, y:0} } );
+  var player = { id: socket.id ,name: 'Player'+playerList.length, color: randomColor, xPos: 50.0, yPos: 50.0, movevector: {x: 0, y:0} };
+  var playerMove = {player: player, ts: 0};
+
+  playerList.push(player);
+  playerMoveMap.push(playerMove);
 
 
 
@@ -48,6 +54,7 @@ io.sockets.on('connection', function (socket) {
         if(playerList[k].id == socket.id){
           console.log("A player left: " + socket.id);
           playerList.splice(k, 1);
+          playerMoveMap.splice(k, 1);
           break;
         }
     }
@@ -76,10 +83,20 @@ io.sockets.on('connection', function (socket) {
   socket.on('movestart', function(player){
     var startMoveTime = new Date().getTime();
     console.log(player.name + " started move at " + startMoveTime);
+    console.log("Player X is " + player.xPos);
+    
 
-    var playerMove = {player: player, ts: startMoveTime};
-
-    playerMoveMap.push(playerMove);
+    for(var i=0; i < playerMoveMap.length; i++){
+      if(playerMoveMap[i].player.id == player.id){
+           playerList[i] = player;
+          var playerMove = {player: playerList[i], ts: startMoveTime};
+          playerMoveMap[i] = playerMove;
+           io.sockets.emit('playervectorchange', playerList[i]);
+           break;
+      }
+    }
+    
+   
 
   });
 
@@ -87,9 +104,21 @@ io.sockets.on('connection', function (socket) {
     var endMoveTime = new Date().getTime();
     console.log(player.name + " stopped the move at " + endMoveTime);
 
-     for(var i=0; i < playerMoveMap.length; i++){
+
+
+    for(var i=0; i < playerMoveMap.length; i++){
       if(playerMoveMap[i].player.id == player.id){
-         playerMoveMap.splice[i,1];
+
+         var timeDiff = endMoveTime - playerMoveMap[i].ts;
+
+         playerList[i] = player;
+         playerList[i].xPos = player.xPos + Math.floor( (playerMoveMap[i].player.movevector.x * (timeDiff/300) ));
+         playerList[i].yPos = player.yPos + Math.floor( (playerMoveMap[i].player.movevector.y * (timeDiff/300) ));
+
+         console.log('Server: Player moved for' + timeDiff + 'ms');
+
+         playerMoveMap[i].player = playerList[i];
+         io.sockets.emit('playervectorchange', playerList[i]);
         break;
       }
     }
