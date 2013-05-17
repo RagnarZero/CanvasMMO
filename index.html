@@ -1,0 +1,270 @@
+<html>
+	<head>
+		<script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+		<script>document.write('<script src="//'+ location.hostname + ':4242/socket.io/socket.io.js">\x3C/script>')</script>
+		
+		<script type="text/javascript">
+
+			var windowHeight;
+			var windowWidth;
+			var ctx;
+			var gameObjectList = new Array();
+			var fadeOutSpeed = 0.5;
+
+			var blockSize = 50.0;
+
+			$(document).ready(function() {
+				var c = document.getElementById("mainCanvas");
+				
+				ctx=c.getContext("2d");
+				
+				windowHeight = $(window).height();
+				windowWidth = $(window).width();
+
+				$('#mainCanvas').attr('height',windowHeight);
+				$('#mainCanvas').attr('width',windowWidth);
+
+				
+
+				window.requestAnimFrame = (function(callback) {
+	        		return window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame ||
+	        			function(callback) {
+	          			window.setTimeout(callback, 1000 / 60);
+	        		};
+	      		})();
+
+		      	function animate() {
+			        
+
+
+			        // clear
+			        ctx.clearRect(0, 0, windowWidth, windowHeight);
+
+					for(var i = 0; i < gameObjectList.length; i++){
+
+						drawRect(gameObjectList[i].xPos, gameObjectList[i].yPos, blockSize, blockSize, 0,gameObjectList[i].color, 100);
+						drawText(gameObjectList[i].name,gameObjectList[i].xPos + (blockSize/2), gameObjectList[i].yPos - 10);
+
+						if(typeof gameObjectList[i].chatMessage !== undefined && gameObjectList[i].chatMessage != null){
+							if(gameObjectList[i].chatMessage.ttl > 0){
+								drawText(gameObjectList[i].chatMessage.message,gameObjectList[i].xPos + (blockSize/2), gameObjectList[i].yPos + blockSize+ 20);
+								gameObjectList[i].chatMessage.ttl--;
+							}
+							else{
+								gameObjectList[i].chatMessage = null;								
+							}
+						}
+			        }
+
+			        if(player != null){
+			        	handleMovement();
+			        }
+		       
+		        // request new frame
+		        requestAnimFrame(function() {
+		          animate();
+		        });
+	      	}
+      		animate();
+
+			
+		});
+
+
+			function addPlayer(playerObject){
+				
+				
+				if(  player != null && (player.id != playerObject.id) ){
+					console.log("Adding player with id: " + playerObject.id);
+					gameObjectList.push(playerObject);
+				}
+			}
+
+			function updatePlayerList(playerObjects){
+				gameObjectList = null;
+				gameObjectList = new Array();
+				for(var i = 0; i < playerObjects.length; i++){
+					gameObjectList.push(playerObjects[i]);
+				}
+				
+			}
+
+			function addChatMessage(data){
+				console.log("adding chat message")
+				for(var i = 0; i < gameObjectList.length; i++){
+					if(gameObjectList[i].id == data.sender.id){
+						console.log("for player " + gameObjectList[i].id);
+						gameObjectList[i].chatMessage = {message: data.message, ttl: 500};
+					}
+				}
+			}
+
+			function drawText(text, xPos, yPos){
+				ctx.fillStyle = "black";
+				ctx.textAlign = "center";
+		 	    ctx.font = "bold 16px Arial";
+	    	    ctx.fillText(text, xPos, yPos);
+			}
+
+			function drawRect(xPos, yPos, rectWidth, rectHeight, roundRadius, color, opacity){
+				
+				ctx.beginPath();		
+				ctx.fillStyle = "rgba("+color.red+", "+color.green+", "+color.blue+", "+opacity/100+")";    
+			    //ctx.fillStyle = '#AAFFAA';
+			    ctx.strokeStyle = "rgba(0, 0, 0, "+opacity/100+")";   
+			    ctx.lineWidth = 7;
+			    ctx.moveTo(xPos + roundRadius, yPos);
+			    ctx.lineTo(xPos+rectWidth - roundRadius, yPos);
+			    ctx.quadraticCurveTo(xPos + rectWidth, yPos, xPos + rectWidth, yPos + roundRadius);
+			    
+			    ctx.lineTo(xPos + rectWidth, yPos + rectHeight - roundRadius);
+			    ctx.quadraticCurveTo(xPos + rectWidth , yPos+ rectHeight , xPos + rectWidth - roundRadius, yPos + rectHeight);
+			    
+			    ctx.lineTo(xPos + roundRadius, yPos + rectHeight );
+	 			ctx.quadraticCurveTo(xPos , yPos+ rectHeight , xPos , yPos + rectHeight- roundRadius);
+
+				ctx.lineTo(xPos, yPos + roundRadius );
+				ctx.quadraticCurveTo(xPos , yPos , xPos + roundRadius, yPos );
+
+			    ctx.closePath();
+			    ctx.fill();  
+			   	ctx.stroke();
+			   
+			}
+
+			function handleMovement(){
+
+			    if(pressedKeys[37]) {
+			        player.xPos = player.xPos - 4;
+			    }
+			    if(pressedKeys[39]) {
+			        player.xPos = player.xPos + 4;
+			    }
+			    if(pressedKeys[38]) {
+			        player.yPos = player.yPos - 4;
+			    }
+			    if(pressedKeys[40]) {
+			        player.yPos = player.yPos + 4;
+			    }
+
+
+		  		//socket.emit('move', player);		
+			}
+			
+
+		</script>
+
+		<script>
+		  var socket = io.connect(location.hostname);
+		  
+		  var player = null;
+
+		  var pressedKeys = [];
+
+		  var chatWindowVisible = false;
+
+		  socket.on('login', function (serverPlayerList) {
+
+		  	
+		  	player = serverPlayerList[serverPlayerList.length-1];
+
+		  	updatePlayerList(serverPlayerList);
+		    console.log(serverPlayerList);
+			
+		   
+ 
+
+			$(document.body).keydown(function (e) {
+				if(!pressedKeys[e.keyCode]){
+		    		pressedKeys[e.keyCode] = true;
+		    		socket.emit('movestart', player);
+		   		}
+		    					  	
+			});
+
+			$(document.body).keyup(function (e) {
+				if(pressedKeys[e.keyCode]){
+					pressedKeys[e.keyCode] = false;
+					socket.emit('moveend', player);
+				}
+				
+			});
+
+			$(document.body).keypress(function (e) {
+				if(e.keyCode == 13){
+					if(!chatWindowVisible){
+						chatWindowVisible = true;
+						$('#chatInputContainer').show();
+						$('#chatInput').focus();	
+					}
+					else{
+						chatWindowVisible = false;
+						sendText($('#chatInput').val());
+						$('#chatInput').val('');
+						$('#chatInputContainer').hide();
+						$('#mainCanvas').focus();
+					}
+					
+				}
+				
+				
+			});
+  
+		  });
+
+		  socket.on('move', function(player) {
+		  	for(var i=0; i < gameObjectList.length; i++){
+		      if(gameObjectList[i].id == player.id){
+		        gameObjectList[i].xPos = player.xPos;
+		        gameObjectList[i].yPos = player.yPos;
+		      }
+		    }
+		  });
+
+		  socket.on('updateplayerlist', function(serverPlayerList){
+		  	updatePlayerList(serverPlayerList);
+		  });
+
+		  socket.on('playerjoined', function (data) {
+		    addPlayer(data);
+		  });
+
+		  socket.on('changename', function (data) {
+		  	for(var i=0; i < gameObjectList.length; i++){
+			    if(gameObjectList[i].id == data.id){
+			        gameObjectList[i].name = data.name;
+			    }
+			}
+
+		  });
+
+		  socket.on('changecolor', function (data) {
+		  	//$('#chatName').css('color',data.color);
+		    player.color = data.color;
+		    //$('#chatWindow').append('<p style="color:'+player.color+'">Farbe geaendert..</p>');
+		  });
+
+		  socket.on('message', function (data) {
+	  		console.log('received message');
+	  		addChatMessage(data);
+		  });
+
+		  function sendText(messageToSend){
+
+		  	socket.emit('message', { sender: player, message: messageToSend});
+		  	
+		  }
+
+		  
+		</script>
+	</head>
+
+	<body style="padding:0; margin:0">
+		
+		<canvas id="mainCanvas" style="width:100%;height:100%;"></canvas>
+		<div id="chatInputContainer" style="position:absolute; width:100%; bottom:0; display:none;">
+			<input id="chatInput" style="width:100%" type="text" > </input>
+		</div>
+	</body>
+
+</html>
