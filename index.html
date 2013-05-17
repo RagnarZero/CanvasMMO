@@ -16,6 +16,10 @@
 			var intervalTime = 10.0;
 			var intervalDiffOffset = intervalTime;
 
+
+			var character = new Image();
+			character.src = 'char.png'; 
+
 			$(document).ready(function() {
 				var c = document.getElementById("mainCanvas");
 				
@@ -133,6 +137,9 @@
 			   
 			}
 
+ 			function drawChar(xPos, yPos){
+        		ctx.drawImage(character, xPos, yPos);
+      		}
 
 			function updatePlayerMoveVector(){
 
