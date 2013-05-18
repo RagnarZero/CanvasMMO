@@ -3,6 +3,10 @@ var app = express();
 var server = require('http').createServer(app);
 var io = require('socket.io').listen(server);
 
+
+var fs = require('fs')
+  , gm = require('gm');
+
 app.use(express.static(__dirname + '/public'));
 server.listen(4242);
 
@@ -20,7 +24,16 @@ app.get('/', function (req, res) {
 io.sockets.on('connection', function (socket) {
 
 
-
+// obtain the size of an image
+gm(__dirname + '/public/char.png')
+.size(function (err, size) {
+  if (!err){
+    console.log(size.width > size.height ? 'wider' : 'taller than you');
+  }
+  else{
+    console.log("GM ERROR!!!!!", err);
+  }
+});
 
   var randomRed = Math.floor((Math.random()*255)+0);
   var randomGreen = Math.floor((Math.random()*255)+0);
@@ -28,7 +41,7 @@ io.sockets.on('connection', function (socket) {
 
   var randomColor = {red: randomRed, blue: randomBlue, green: randomGreen};
 
-  var player = { id: socket.id ,name: 'Player'+playerList.length, color: randomColor, xPos: 50.0, yPos: 50.0, movevector: {x: 0, y:0} };
+  var player = { id: socket.id ,name: 'Player'+playerList.length, color: randomColor, xPos: 50.0, yPos: 50.0, movevector: {x: 0, y:0}, sprite: "char.png" };
   var playerMove = {player: player, ts: 0};
 
   playerList.push(player);
@@ -126,7 +139,7 @@ io.sockets.on('connection', function (socket) {
   });
 
   socket.on('message', function (data) {
-  	if(data.message.substr(0, 6) == '/name '){
+    if(data.message.substr(0, 6) == '/name '){
       var newName = data.message.substr(6);
       for(var i=0; i < playerList.length; i++){
         if(playerList[i].id == socket.id){
@@ -135,13 +148,13 @@ io.sockets.on('connection', function (socket) {
           break;
         }
       }
-  		
-  	}
-  	else if(data.message.substr(0, 7) == '/color '){
-  		socket.emit('changecolor',{color: data.message.substr(7)});
-  	}
-  	else{
-    	io.sockets.emit('message', data);
-	}
+      
+    }
+    else if(data.message.substr(0, 7) == '/color '){
+      socket.emit('changecolor',{color: data.message.substr(7)});
+    }
+    else{
+      io.sockets.emit('message', data);
+  }
   });
 });

@@ -17,8 +17,7 @@
 			var intervalDiffOffset = intervalTime;
 
 
-			var character = new Image();
-			character.src = 'char.png'; 
+			
 
 			$(document).ready(function() {
 				var c = document.getElementById("mainCanvas");
@@ -49,7 +48,8 @@
 
 					for(var i = 0; i < gameObjectList.length; i++){
 
-						drawRect(gameObjectList[i].xPos, gameObjectList[i].yPos, blockSize, blockSize, 0,gameObjectList[i].color, 100);
+						//drawRect(gameObjectList[i].xPos, gameObjectList[i].yPos, blockSize, blockSize, 0,gameObjectList[i].color, 100);
+						drawChar(gameObjectList[i].sprite,gameObjectList[i].xPos, gameObjectList[i].yPos);
 						drawText(gameObjectList[i].name,gameObjectList[i].xPos + (blockSize/2), gameObjectList[i].yPos - 10);
 
 						if(typeof gameObjectList[i].chatMessage !== undefined && gameObjectList[i].chatMessage != null){
@@ -137,8 +137,10 @@
 			   
 			}
 
- 			function drawChar(xPos, yPos){
-        		ctx.drawImage(character, xPos, yPos);
+ 			function drawChar(objSprite,xPos, yPos){
+ 				var sprite = new Image();
+				sprite.src = objSprite; 
+        		ctx.drawImage(sprite, xPos, yPos);
       		}
 
 			function updatePlayerMoveVector(){
