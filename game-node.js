@@ -20,8 +20,6 @@ app.get('/', function (req, res) {
 
 io.sockets.on('connection', function (socket) {
 
-gm(__dirname + '/public/character/char.png')
-
   var randomRed = Math.floor((Math.random()*255)+0);
   var randomGreen = Math.floor((Math.random()*255)+0);
   var randomBlue = Math.floor((Math.random()*255)+0); 
