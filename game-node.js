@@ -36,7 +36,7 @@ io.sockets.on('connection', function (socket) {
   changeColor(socket.id, randomColorHex);
 
  
-  var player = { id: socket.id ,name: 'Player'+playerList.length, color: randomColor, xPos: 50.0, yPos: 50.0, movevector: {x: 0, y:0}, sprite: 'char'+socket.id+'.png', cb: new Date().getTime() };
+  var player = { id: socket.id ,name: 'Player'+playerList.length, color: randomColor, xPos: 50.0, yPos: 50.0, movevector: {x: 0, y:0}, sprite: 'charGen'+socket.id+'.png', cb: new Date().getTime() };
   var playerMove = {player: player, ts: 0};
 
   playerList.push(player);
@@ -184,7 +184,7 @@ function changeColor(playerId,colorAsHex){
   .opaque('#E1D082')
   .fill(randomColorHexDarker)
   .opaque('#CBBA6B')
-  .write(__dirname + '/public/char'+playerId+'.png', function(err){
+  .write(__dirname + '/public/charGen'+playerId+'.png', function(err){
     if(err){
       console.log('Error while converting image: ' + err);
     }
