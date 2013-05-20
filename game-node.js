@@ -25,7 +25,7 @@ io.sockets.on('connection', function (socket) {
 
 
 // obtain the size of an image
-gm(__dirname + '/public/char.png')
+gm(__dirname + '/public/characters/char.png')
 .size(function (err, size) {
   if (!err){
     console.log(size.width > size.height ? 'wider' : 'taller than you');
