@@ -49,7 +49,7 @@
 					for(var i = 0; i < gameObjectList.length; i++){
 
 						//drawRect(gameObjectList[i].xPos, gameObjectList[i].yPos, blockSize, blockSize, 0,gameObjectList[i].color, 100);
-						drawChar(gameObjectList[i].sprite,gameObjectList[i].xPos, gameObjectList[i].yPos);
+						drawChar(gameObjectList[i].sprite,gameObjectList[i].xPos, gameObjectList[i].yPos, gameObjectList[i].cb);
 						drawText(gameObjectList[i].name,gameObjectList[i].xPos + (blockSize/2), gameObjectList[i].yPos - 10);
 
 						if(typeof gameObjectList[i].chatMessage !== undefined && gameObjectList[i].chatMessage != null){
@@ -137,9 +137,10 @@
 			   
 			}
 
- 			function drawChar(objSprite,xPos, yPos){
+ 			function drawChar(objSprite,xPos, yPos, cb){
  				var sprite = new Image();
-				sprite.src = objSprite; 
+ 				sprite.src = objSprite + "?" + cb;	
+				
         		ctx.drawImage(sprite, xPos, yPos);
       		}
 
@@ -226,6 +227,8 @@
 
 		  var currentIntervalTS = 0;
 		  var lastIntervalTS = 0;
+
+		  
 
 
 		  socket.on('login', function (serverPlayerList) {
@@ -333,8 +336,17 @@
 
 
 		  socket.on('changecolor', function (data) {
-		  	//$('#chatName').css('color',data.color);
-		    player.color = data.color;
+		  	for(var i=0; i < gameObjectList.length; i++){
+			    if(gameObjectList[i].id == data.id){
+			        gameObjectList[i] = data.player;
+			        if(data.id == player.id){
+			        	player = data.player;
+			        }
+			 
+			        
+			    }
+			}
+		    //player.color = data.color;
 		    //$('#chatWindow').append('<p style="color:'+player.color+'">Farbe geaendert..</p>');
 		  });
 

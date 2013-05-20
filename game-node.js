@@ -24,19 +24,19 @@ app.get('/', function (req, res) {
 io.sockets.on('connection', function (socket) {
 
 
-// obtain the size of an image
-gm(__dirname + '/public/char.png')
-.channel matte -threshold 0% -channel RGB -fill [your background color] -opaque transparent -channel matte -threshold 100% src.png dst.png
 
-);
 
   var randomRed = Math.floor((Math.random()*255)+0);
   var randomGreen = Math.floor((Math.random()*255)+0);
   var randomBlue = Math.floor((Math.random()*255)+0); 
 
   var randomColor = {red: randomRed, blue: randomBlue, green: randomGreen};
+  var randomColorHex = rgbToHex(randomRed, randomGreen, randomBlue); 
 
-  var player = { id: socket.id ,name: 'Player'+playerList.length, color: randomColor, xPos: 50.0, yPos: 50.0, movevector: {x: 0, y:0}, sprite: "char.png" };
+  changeColor(socket.id, randomColorHex);
+
+ 
+  var player = { id: socket.id ,name: 'Player'+playerList.length, color: randomColor, xPos: 50.0, yPos: 50.0, movevector: {x: 0, y:0}, sprite: 'char'+socket.id+'.png', cb: new Date().getTime() };
   var playerMove = {player: player, ts: 0};
 
   playerList.push(player);
@@ -146,10 +146,69 @@ gm(__dirname + '/public/char.png')
       
     }
     else if(data.message.substr(0, 7) == '/color '){
-      socket.emit('changecolor',{color: data.message.substr(7)});
+      //socket.emit('changecolor',{color: data.message.substr(7)});
+      var newColor = data.message.substr(7);
+      for(var i=0; i < playerList.length; i++){
+        if(playerList[i].id == socket.id){
+          changeColor(socket.id, newColor);
+          playerList[i].color = newColor;
+          playerList[i].cb = new Date().getTime();
+          io.sockets.emit('changecolor',{player:playerList[i], id: socket.id});
+          break;
+        }
+      }
     }
     else{
       io.sockets.emit('message', data);
   }
   });
 });
+
+//Image Manipulation
+function changeColor(playerId,colorAsHex){
+ 
+  var colorAsRGB = hexToRgb(colorAsHex);
+  var randomColorRed =  parseInt(colorAsRGB.r)-22;
+  var randomColorGreen = parseInt(colorAsRGB.g)-22;
+  var randomColorBlue = parseInt(colorAsRGB.b)-23;
+
+  var randomColorHexDarker = rgbToHex(randomColorRed, randomColorGreen, randomColorBlue);
+  
+  console.log("Color as HEX: " + colorAsHex);
+  console.log("Color as RGB: " + colorAsRGB.r + ','  + colorAsRGB.g + ',' + colorAsRGB.b);
+  console.log("Color darker as HEX: " + randomColorHexDarker+ " Red:" + randomColorRed);
+
+  // exchange pixel of color in fill with opaque color
+  gm(__dirname + '/public/char.png')
+  .fill(colorAsHex)
+  .opaque('#E1D082')
+  .fill(randomColorHexDarker)
+  .opaque('#CBBA6B')
+  .write(__dirname + '/public/char'+playerId+'.png', function(err){
+    if(err){
+      console.log('Error while converting image: ' + err);
+    }
+  });
+
+
+}
+
+
+//Utiliy functions
+function componentToHex(c) {
+    var hex = c.toString(16);
+    return hex.length == 1 ? "0" + hex : hex;
+}
+
+function rgbToHex(r, g, b) {
+    return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+}
+
+function hexToRgb(hex) {
+    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+    } : null;
+}
