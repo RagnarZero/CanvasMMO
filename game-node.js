@@ -21,6 +21,19 @@ app.get('/', function (req, res) {
 io.sockets.on('connection', function (socket) {
 
 
+<<<<<<< HEAD
+=======
+// obtain the size of an image
+gm(__dirname + '/public/characters/char.png')
+.size(function (err, size) {
+  if (!err){
+    console.log(size.width > size.height ? 'wider' : 'taller than you');
+  }
+  else{
+    console.log("GM ERROR!!!!!", err);
+  }
+});
+>>>>>>> sprites
 
   var randomRed = Math.floor((Math.random()*255)+0);
   var randomGreen = Math.floor((Math.random()*255)+0);
