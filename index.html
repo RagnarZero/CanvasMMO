@@ -139,6 +139,7 @@
 
  			function drawChar(objSprite,xPos, yPos, cb){
  				var sprite = new Image();
+ 				//Use cachebuster to determine redraw
  				sprite.src = objSprite + "?" + cb;	
 				
         		ctx.drawImage(sprite, xPos, yPos);
