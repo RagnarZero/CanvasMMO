@@ -4,9 +4,6 @@ var server = require('http').createServer(app);
 var io = require('socket.io').listen(server);
 
 
-var fs = require('fs')
-  , gm = require('gm');
-
 app.use(express.static(__dirname + '/public'));
 server.listen(4242);
 
@@ -24,16 +21,6 @@ app.get('/', function (req, res) {
 io.sockets.on('connection', function (socket) {
 
 
-// obtain the size of an image
-gm(__dirname + '/public/char.png')
-.size(function (err, size) {
-  if (!err){
-    console.log(size.width > size.height ? 'wider' : 'taller than you');
-  }
-  else{
-    console.log("GM ERROR!!!!!", err);
-  }
-});
 
   var randomRed = Math.floor((Math.random()*255)+0);
   var randomGreen = Math.floor((Math.random()*255)+0);
