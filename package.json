@@ -1,0 +1,11 @@
+{
+  "name" : "CanvasMMO",
+  "dependencies" : {
+    "express" :  "*",
+    "socket.io" : "*",
+    "gm" : "*",
+  },
+  "devDependencies" : {
+    "jasmine-node" : "*"
+  }
+}
